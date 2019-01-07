@@ -2,6 +2,76 @@
 
 The project is made possible by volunteer contributors who have put in thousands of hours of their own time, and made the source code freely available under the [Apache License 2.0](https://github.com/SeleniumHQ/docker-selenium/blob/master/LICENSE.md).
 
+## FORK NOTES
+
+This fork adds a few variables to customize the image with specific selenium, chrome and chromedriver
+versions.
+
+Changes:
+
+- `SELENIUM_VERSION` - use specific Selenium Server version
+- `CHROME_VERSION` - modified syntax, now not only channel could be passed but also version, for example,
+  "google-chrome-stable=52.0.2743.116"
+- `CHROME_SHA512` - optional, check SHA512 signature
+- `CHROME_DRIVER_VERSION` - already existing option, but need to be used with `CHROME_VERSION` to install
+  Chrome-compatible ChromeDriver.
+
+SHA512 could be optionally passed to check integrity since this docker image is trying to pull old 
+chrome versions from unofficial mirrors.
+
+You could find expected SHA512 hash in Gentoo portage history, for example:
+https://github.com/gentoo/gentoo/commits/master/www-client/google-chrome
+
+These extra mirrors are used to download old chrome versions:
+
+- https://www.slimjet.com/chrome/google-chrome-old-version.php
+- http://mirror.glendaleacademy.org/chrome/pool/main/g/
+
+ChromeDriver has release notes where Chrome compatibility is explicitly stated,
+this could help to properly choose ChromeDriver that works with Chrome version
+you need: https://chromedriver.storage.googleapis.com/2.41/notes.txt
+
+Image build command line example for Chrome v52:
+
+```
+export BUILD_ARGS="\
+    --build-arg SELENIUM_VERSION=2.53.1 \
+    --build-arg CHROME_VERSION=google-chrome-stable=52.0.2743.116 \
+    --build-arg CHROME_DRIVER_VERSION=2.24 \
+    --build-arg CHROME_SHA512=5d51bebd0cb906b665e4b77dcf69d8f571cdce229a74280ea6b9ab5823db43d17bb9f3b56a9ecb25141a7ec14711c39923379dc717db0b15577369f4fcb3fdae \
+"
+export VERSION=2.53.1-chrome52
+
+make chrome
+# or
+make chrome_debug
+# or
+make standalone_chrome
+# or
+make standalone_chrome_debug
+```
+
+Running HUB node with Chrome 52:
+
+```
+docker run -d \
+    -p 5555:5555 \
+    -e HUB_HOST=your-selenium-hub-hostname-or-ip-address \
+    -e HUB_PORT=your-selenium-hub-port \
+    -e REMOTE_HOST="http://your-public-hostname-or-ip-address:5555" \
+    -v /dev/shm:/dev/shm \
+    selenium/node-chrome:2.53.1-chrome52
+```
+
+Running standalone node with Chrome 52:
+
+```
+docker run -d \
+    -p 4444:4444 \
+    -v /dev/shm:/dev/shm \
+    selenium/node-chrome:2.53.1-chrome52
+```
+
 ## Community
 
 ### [SeleniumHQ Slack](https://seleniumhq.herokuapp.com/)

@@ -1,3 +1,9 @@
+# stub for old docker that fails the build if unused argument is passed
+ARG CHROME_DRIVER_VERSION
+ARG CHROME_SHA512
+ARG CHROME_VERSION
+ARG SELENIUM_VERSION
+
 USER root
 
 #==============

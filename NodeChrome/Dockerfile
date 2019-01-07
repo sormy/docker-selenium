@@ -2,8 +2,11 @@
 # NOTE: DO *NOT* EDIT THIS FILE.  IT IS GENERATED.
 # PLEASE UPDATE Dockerfile.txt INSTEAD OF THIS FILE
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-FROM selenium/node-base:3.141.59-dubnium
+FROM selenium/node-base:2.53.1-chrome52
 LABEL authors=SeleniumHQ
+
+# stub for old docker that fails the build if unused argument is passed
+ARG SELENIUM_VERSION
 
 USER root
 
@@ -18,13 +21,9 @@ USER root
 #       google-chrome-beta  (pull latest beta)
 #============================================
 ARG CHROME_VERSION="google-chrome-stable"
-RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-  && echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
-  && apt-get update -qqy \
-  && apt-get -qqy install \
-    ${CHROME_VERSION:-google-chrome-stable} \
-  && rm /etc/apt/sources.list.d/google-chrome.list \
-  && rm -rf /var/lib/apt/lists/* /var/cache/apt/*
+ARG CHROME_SHA512=""
+COPY install_chrome_binary /opt/bin/install_chrome_binary
+RUN /opt/bin/install_chrome_binary ${CHROME_VERSION} ${CHROME_SHA512}
 
 #=================================
 # Chrome Launch Script Wrapper

@@ -1,6 +1,9 @@
 #!/bin/bash
 
 CHROME_VERSION=$(/usr/bin/google-chrome -version | awk '{ print $3 }')
+SELENIUM_VERSION=$(cat /opt/selenium/selenium-server-standalone.txt)
+
+SELENIUM2=$(echo "$SELENIUM_VERSION" | grep -q '^2\.' && echo "1")
 
 cat <<_EOF
 {
@@ -13,6 +16,7 @@ cat <<_EOF
       "applicationName": "$NODE_APPLICATION_NAME"
     }
   ],
+  $([ -n "$SELENIUM2" ] && echo '"configuration": {')
   "proxy": "org.openqa.grid.selenium.proxy.DefaultRemoteProxy",
   "maxSession": $NODE_MAX_SESSION,
   "host": "$NODE_HOST",
@@ -23,5 +27,6 @@ cat <<_EOF
   "unregisterIfStillDownAfter": $NODE_UNREGISTER_IF_STILL_DOWN_AFTER,
   "downPollingLimit": $NODE_DOWN_POLLING_LIMIT,
   "debug": $GRID_DEBUG
+  $([ -n "$SELENIUM2" ] && echo '}')
 }
 _EOF

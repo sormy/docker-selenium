@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# google-chrome-stable
+# google-chrome-beta
+# google-chrome-unstable
+# google-chrome-stable=A.B.C.D
+CHROME_RAW_VERSION="$1"
+
+CHROME_SHA512="$2"
+
+CHROME_CHANNEL="$(echo "$CHROME_RAW_VERSION" | sed 's/=.*$//')"
+CHROME_VERSION="$(echo "$CHROME_RAW_VERSION" | sed 's/^.*=//')"
+
+if [ -n "$CHROME_VERSION" ]; then
+    # google releases browser using this naming convention, we store locally in the same way
+    chrome_filename="${CHROME_CHANNEL}_${CHROME_VERSION}-1_amd64.deb"
+
+    # try download deb installer from one of mirrors and check signature if provided
+    # official google mirror has only last two versions available
+    # slimjet has only stable channel for chrome 48+ and different url for different versions
+    # glendaleacademy has all channels for chrome 52-60
+    for chrome_url in \
+        "https://dl.google.com/linux/chrome/deb/pool/main/g/${CHROME_CHANNEL}/${CHROME_CHANNEL}_${CHROME_VERSION}-1_amd64.deb" \
+        "https://www.slimjet.com/chrome/download-chrome.php?file=files%2F${CHROME_VERSION}%2Fgoogle-chrome-stable_current_amd64.deb" \
+        "https://www.slimjet.com/chrome/download-chrome.php?file=lnx%2Fchrome64_${CHROME_VERSION}.deb" \
+        "http://mirror.glendaleacademy.org/chrome/pool/main/g/${CHROME_CHANNEL}/${CHROME_CHANNEL}_${CHROME_VERSION}-1_amd64.deb"
+    do
+        echo "Downloading Chrome from $chrome_url ..."
+        if wget -q -O "$chrome_filename" "$chrome_url"; then
+            if [ -n "$CHROME_SHA512" ]; then
+                sha512="$(sha512sum "$chrome_filename" | sed 's/ .*$//')"
+                if [ "$CHROME_SHA512" != "$sha512" ]; then
+                    echo "SHA512 signature check failed:"
+                    echo " - expected: $CHROME_SHA512"
+                    echo " - actual: $sha512"
+                else
+                    echo "SHA512 signature is valid"
+                    # hash is valid, using what was downloaded
+                    break
+                fi
+            else
+                # no need to check hash, using what was downloaded
+                break
+            fi
+        fi
+    done
+
+    # install chrome and then install dependencies
+    # "dpkg -i" will fail due to missing dependencies and that is fine
+    # "apt-get -f install" will install all missing dependencies
+    [ -f "$chrome_filename" ] \
+        && apt-get update -y \
+        && ( dpkg -i "$chrome_filename" || true ) \
+        && apt-get -f install -y
+
+    exit $?
+else
+    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
+        && echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
+        && apt-get update -qqy \
+        && apt-get -qqy install ${CHROME_CHANNEL:-google-chrome-stable} \
+        && rm /etc/apt/sources.list.d/google-chrome.list \
+        && rm -rf /var/lib/apt/lists/* /var/cache/apt/*
+
+    exit $?
+fi

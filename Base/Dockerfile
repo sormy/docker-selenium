@@ -1,6 +1,11 @@
 FROM ubuntu:xenial-20181113
 LABEL authors="Selenium <selenium-developers@googlegroups.com>"
 
+# stub for old docker that fails the build if unused argument is passed
+ARG CHROME_VERSION
+ARG CHROME_SHA512
+ARG CHROME_DRIVER_VERSION
+
 #================================================
 # Customize sources for apt-get
 #================================================
@@ -69,11 +74,14 @@ COPY supervisord.conf /etc
 #==========
 # Selenium & relaxing permissions for OpenShift and other non-sudo environments
 #==========
-RUN  mkdir -p /opt/selenium /var/run/supervisor /var/log/supervisor \
+ARG SELENIUM_VERSION=3.141.59
+RUN SELENIUM_MAJOR_VERSION=$(echo ${SELENIUM_VERSION} | sed 's/^\([0-9]*\.[0-9]*\)\..*$/\1/') \
+  && mkdir -p /opt/selenium /var/run/supervisor /var/log/supervisor \
   && touch /opt/selenium/config.json \
   && chmod -R 777 /opt/selenium /var/run/supervisor /var/log/supervisor /etc/passwd \
-  && wget --no-verbose https://selenium-release.storage.googleapis.com/3.141/selenium-server-standalone-3.141.59.jar \
+  && wget --no-verbose https://selenium-release.storage.googleapis.com/${SELENIUM_MAJOR_VERSION}/selenium-server-standalone-${SELENIUM_VERSION}.jar \
     -O /opt/selenium/selenium-server-standalone.jar \
+  && echo ${SELENIUM_VERSION} > /opt/selenium/selenium-server-standalone.txt \
   && chgrp -R 0 /opt/selenium ${HOME} /var/run/supervisor /var/log/supervisor \
   && chmod -R g=u /opt/selenium ${HOME} /var/run/supervisor /var/log/supervisor
 
